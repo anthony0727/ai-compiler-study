@@ -25,6 +25,7 @@ def sample_data(batch, seq_len, n_heads, head_dim):
 
 def test_rope(t_shape):
     t_triton, freqs, dx_triton = sample_data(*t_shape)
+    freqs_ = torch.cat((freqs, freqs), dim=-1)
 
     t_torch = t_triton.clone()
     dx_torch = dx_triton.clone()
@@ -32,7 +33,7 @@ def test_rope(t_shape):
     t_triton = rope(t_triton, freqs)
     t_triton.backward(dx_triton, retain_graph=True)
 
-    t_torch = apply_rotary_pos_emb(t_torch, torch.cat((freqs, freqs), dim=-1), tensor_format="bshd")
+    t_torch = apply_rotary_pos_emb(t_torch, freqs_, tensor_format="bshd")
     t_torch.backward(dx_torch, retain_graph=True)
 
     torch.testing.assert_close(t_triton, t_torch, atol=1e-3, rtol=0)
@@ -59,10 +60,11 @@ def get_benchmark(name, mode):
 ])
 def bench_rope(batch, seq_len, n_heads, head_dim, provider, mode):
     t, freqs, dx = sample_data(batch, seq_len, n_heads, head_dim)
+    freqs_ = torch.cat((freqs, freqs), dim=-1)
 
     quantiles = [0.5, 0.2, 0.8]
     if provider == "torch":
-        fw = lambda: apply_rotary_pos_emb(t, torch.cat((freqs, freqs)), tensor_format="bshd")
+        fw = lambda: apply_rotary_pos_emb(t, freqs_, tensor_format="bshd")
     elif provider == "triton":
         fw = lambda: rope(t, freqs)
 
@@ -99,5 +101,6 @@ if __name__ == "__main__":
 
     # TODO: empty file
     t, freqs, dx = sample_data(1, 64, 32, 512)
-    profile_rope(lambda: apply_rotary_pos_emb(t, torch.cat((freqs, freqs)), tensor_format="bshd"), "torch")
+    freqs_ = torch.cat((freqs, freqs), dim=-1)
+    profile_rope(lambda: apply_rotary_pos_emb(t, freqs_, tensor_format="bshd"), "torch")
     profile_rope(lambda: rope(t, freqs), "triton")
