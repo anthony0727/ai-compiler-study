@@ -1,6 +1,6 @@
 # ai-compiler-study
 
-You will require docker engine compatible with GPU and ~12GB of GPU memory.
+You will require docker engine compatible with GPU and ~20GB of GPU memory.
 
 ## Run
 

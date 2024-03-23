@@ -38,6 +38,7 @@ def test_rope(t_shape):
     torch.testing.assert_close(t_triton, t_torch, atol=1e-3, rtol=0)
     torch.testing.assert_close(t_triton.grad, t_torch.grad, atol=1e-5, rtol=0)
 
+
 def get_benchmark(name, mode):
     return triton.testing.Benchmark(
         x_names=["seq_len"],  
@@ -50,6 +51,7 @@ def get_benchmark(name, mode):
         plot_name=name,
         args={'batch': 32, 'n_heads': 8, 'head_dim': 256, 'mode': mode},
     )
+
 
 @triton.testing.perf_report([
     get_benchmark("rope_fw", "fw"),
@@ -90,10 +92,10 @@ def profile_rope(f, name):
 if __name__ == "__main__":
     test_rope([1, 16, 32, 256])
     test_rope([1, 64, 32, 512])
+    test_rope([32, 16, 32, 256])
 
     Path('./results').mkdir(parents=True, exist_ok=True)
     bench_rope.run(show_plots=True, print_data=True, save_path="./results")
-
 
     # TODO: empty file
     t, freqs, dx = sample_data(1, 64, 32, 512)
