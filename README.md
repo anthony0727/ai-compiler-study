@@ -1,6 +1,6 @@
 # ai-compiler-study
 
-You will require docker engine compatible with GPU and ~20GB of GPU memory.
+You will require docker engine compatible with GPU and ~15GB of GPU memory.
 
 ## Run
 
@@ -19,8 +19,8 @@ docker run --gpus all --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 -v 
 * Implemented `TritonRoPE` class and performed benchmark, profiling against `transformer_engine.attention.apply_rotary_pos_emb`.
 * TritonRoPE is implemented as in-place operaton.
 * It's ~x8 times faster on foward pass, ~x6 times faster on backward pass, than Pytorch.
-* I referenced a lot from unsloth, where they have carefully tuned launch grid size and block size.
-* I see that CUDA programming adopts blocked threads whereas Triton adopts blocked programs. I don't fully understand this; as far as I know, thread is supposed to be a subset of a program...?
+* I referenced a lot from unsloth, where they have carefully tuned launch grid size and block size. Especially, the launch grid is of size `[batch_size * seq_len, n_heads * head_dim]`, this configuration seems to fully utilize GPU.
+* I see that CUDA programming adopts blocked threads whereas Triton adopts blocked programs. I don't fully understand this; As far as I know, thread is supposed to be a subset of a program...?
 * Couldn't perform fair comparison on kernel operation scale, due to lack of knowledge & time for debugging & profiling CUDA programming.
 * Wish I could look into computational graphs and see what's going on.
 
