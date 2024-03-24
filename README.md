@@ -16,11 +16,19 @@ docker run --gpus all --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 -v 
 
 ## Result
 
+* Implemented `TritonRoPE` class and performed benchmark, profiling against `transformer_engine.attention.apply_rotary_pos_emb`.
+* TritonRoPE is implemented as in-place operaton.
+* It's ~x8 times faster on foward pass, ~x6 times faster on backward pass, than Pytorch.
+* I referenced a lot from unsloth, where they have carefully tuned launch grid size and block size.
+* I see that CUDA programming adopts blocked threads whereas Triton adopts blocked programs. I don't fully understand this; as far as I know, thread is supposed to be a subset of a program...?
+* Couldn't perform fair comparison on kernel operation scale, due to lack of knowledge & time for debugging & profiling CUDA programming.
+* Wish I could look into computational graphs and see what's going on.
 
  forward benchmark         | backward benchmark
 :-------------------------:|:-------------------------:
 ![](results/rope_fw.png)   | ![](results/rope_bw.png)
 
+**Pytorch forward profiling**
 ```
 [64 rows x 3 columns]
 -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
@@ -39,7 +47,9 @@ void at::native::elementwise_kernel<128, 2, at::nati...         0.00%       0.00
 -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
 Self CPU time total: 370.000us
 Self CUDA time total: 62.000us
-
+```
+**Triton forward profiling**
+```
 -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
                                                    Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg     Self CUDA   Self CUDA %    CUDA total  CUDA time avg    # of Calls
 -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
@@ -54,9 +64,9 @@ void at::native::vectorized_elementwise_kernel<4, at...         0.00%       0.00
                                           aten::reshape         0.13%       3.000us         0.51%      12.000us       6.000us       0.000us         0.00%       0.000us       0.000us             2
                                              aten::view         0.38%       9.000us         0.38%       9.000us       4.500us       0.000us         0.00%       0.000us       0.000us             2
 -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
-```
 Self CPU time total: 2.351ms
 Self CUDA time total: 13.000us
+```
 
 ## References
 
